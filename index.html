@@ -132,7 +132,7 @@ input[type=file]{display:none}
 </header>
 <div class="toolbar" id="tools">
   <button class="tool on" data-t="select" title="Seleccionar, mover y cambiar tamaño"><span class="i">↖</span><span class="lbl">Seleccionar</span></button>
-  <button class="tool" data-t="text" title="Añadir texto: haz clic donde quieras escribir"><span class="i">T</span><span class="lbl">Texto</span></button>
+  <button class="tool" data-t="text" draggable="true" title="Haz clic para escribir o arrastra esta herramienta al documento"><span class="i">T</span><span class="lbl">Texto</span></button>
   <button class="tool" data-t="edit" title="Corregir texto: arrastra sobre el texto que quieras cambiar"><span class="i">✎</span><span class="lbl">Corregir texto</span></button>
   <button class="tool" data-t="note" title="Nota adhesiva"><span class="i">🗒</span><span class="lbl">Nota</span></button>
   <button class="tool" data-t="highlight" title="Resaltar: arrastra sobre el texto"><span class="i">🖍</span><span class="lbl">Resaltar</span></button>
@@ -145,7 +145,9 @@ input[type=file]{display:none}
   <label class="ctl" title="Color">Color <input type="color" id="cColor" value="#111827"></label>
   <label class="ctl" title="Grosor de línea">Grosor <select id="cWidth"><option>1</option><option selected>2</option><option>3</option><option>5</option><option>8</option></select></label>
   <label class="ctl" title="Tamaño de letra">Letra <select id="cSize"><option>8</option><option>10</option><option>11</option><option selected>12</option><option>14</option><option>16</option><option>18</option><option>24</option><option>32</option></select></label>
-  <button class="tool" id="bDel" title="Borrar el elemento seleccionado (Supr)"><span class="i">🗑</span><span class="lbl">Borrar</span></button>
+  <label class="ctl" title="Familia tipográfica">Fuente <select id="cFont"><option value="Helvetica">Arial</option><option value="TimesRoman">Times New Roman</option><option value="Courier">Courier</option></select></label>
+  <button class="tool fmt" id="bBold" title="Negrita"><b>B</b></button><button class="tool fmt" id="bItalic" title="Cursiva"><i>I</i></button><button class="tool fmt" id="bUnderline" title="Subrayado"><u>U</u></button>
+  <button class="tool" id="bDel" title="Borrar el elemento seleccionado (Supr o clic derecho)"><span class="i">🗑</span><span class="lbl">Borrar</span></button>
   <div class="spacer"></div>
   <div class="pnav">
     <button class="tool" id="pPrev" title="Página anterior">◀</button>
@@ -227,8 +229,9 @@ const {PDFDocument,rgb,degrees,StandardFonts,BlendMode,LineCapStyle}=PDFLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PAD=3, LH=1.2, ASC=0.8;
+function fontCss(font){return font==='TimesRoman'?'Georgia, "Times New Roman", serif':font==='Courier'?'Courier, monospace':'Arial, Helvetica, sans-serif';}
 const S={sources:[],pages:[],view:[],zoom:1.25,fit:false,tool:'select',sel:null,editing:null,
-  color:'#111827',hl:'#fde047',width:2,size:12,undo:[],redo:[],name:'documento',cur:0,
+  color:'#111827',hl:'#fde047',width:2,size:12,font:'Helvetica',bold:false,italic:false,underline:false,undo:[],redo:[],name:'documento',cur:0,
   search:{q:'',hits:[],cur:-1},dirty:false};
 let uid=1, measureFont=null;
 const canvasCache=new Map(), thumbCache=new Map();
@@ -435,7 +438,7 @@ function annotSVG(a,vp,tr){
       let s='<g '+id+' class="an" transform="rotate('+d+' '+b.cx+' '+b.cy+')">';
       s+='<rect x="'+b.L+'" y="'+b.T+'" width="'+b.w+'" height="'+b.h+'" fill="'+(a.bg||'rgba(0,0,0,0)')+'"'+(a.bg==='#fff59d'?' stroke="#e3c94a" stroke-width="1"':'')+'/>';
       if(!(S.editing&&S.editing.id===a.id)){
-        a.text.split('\n').forEach((ln,k)=>{s+='<text x="'+(b.L+pad)+'" y="'+(b.T+pad+fs*ASC+k*fs*LH)+'" font-size="'+fs+'" fill="'+a.color+'" font-family="Helvetica, Arial, sans-serif" xml:space="preserve" pointer-events="none">'+esc(ln)+'</text>';});
+        a.text.split('\n').forEach((ln,k)=>{s+='<text x="'+(b.L+pad)+'" y="'+(b.T+pad+fs*ASC+k*fs*LH)+'" font-size="'+fs+'" fill="'+a.color+'" font-family="'+fontCss(a.font)+'" font-weight="'+(a.bold?'700':'400')+'" font-style="'+(a.italic?'italic':'normal')+'" text-decoration="'+(a.underline?'underline':'none')+'" xml:space="preserve" pointer-events="none">'+esc(ln)+'</text>';});
       }
       return s+'</g>';}
     case 'image':{const d=((tr-a.rot)%360+360)%360,b=orientBox(r,d);
@@ -453,7 +456,9 @@ function renderAnnots(i){
   V.svg.innerHTML=h;
 }
 function select(sel){const old=S.sel;S.sel=sel;if(old)renderAnnots(old.page);if(sel&&(!old||old.page!==sel.page))renderAnnots(sel.page);updateBtns();
-  if(sel){const a=getAnnot(sel.page,sel.id);if(a){if(a.color)$('#cColor').value=a.color;if(a.width)$('#cWidth').value=String(a.width);if(a.size)$('#cSize').value=String(a.size);}}}
+  if(sel){const a=getAnnot(sel.page,sel.id);if(a){if(a.color)$('#cColor').value=a.color;if(a.width)$('#cWidth').value=String(a.width);if(a.size)$('#cSize').value=String(a.size);
+    if(a.type==='text'){S.font=a.font||'Helvetica';S.bold=!!a.bold;S.italic=!!a.italic;S.underline=!!a.underline;$('#cFont').value=S.font;$('#bBold').classList.toggle('on',S.bold);$('#bItalic').classList.toggle('on',S.italic);$('#bUnderline').classList.toggle('on',S.underline);}
+  }}}}
 function autoSize(a,i){
   if(a.type!=='text'||a.fixed)return;const V=S.view[i];if(!V)return;
   const lines=a.text.split('\n');const W=Math.max(30,...lines.map(l=>textWidth(l,a.size)))+2*PAD+2;const H=lines.length*a.size*LH+2*PAD;
@@ -508,7 +513,7 @@ function startRect(i,start,t){
     if(w<4&&h<4){if(t!=='edit'){renderAnnots(i);return;}w=180*S.zoom;h=(S.size*LH+2*PAD)*S.zoom;}
     pushHistory();const p=S.pages[i];
     if(t==='edit'){const zs=h/S.zoom;const size=Math.max(6,Math.min(72,Math.round(zs/1.3)));
-      const a={id:uid++,type:'text',text:'',size,color:S.color,bg:'#ffffff',rot:totRot(p),fixed:true};setScreenRect(a,V.vp,x,y,w,h);p.annots.push(a);S.sel={page:i,id:a.id};openEditor(i,a,true);return;}
+      const a={id:uid++,type:'text',text:'',size,color:S.color,bg:'#ffffff',rot:totRot(p),fixed:true,font:S.font,bold:S.bold,italic:S.italic,underline:S.underline};setScreenRect(a,V.vp,x,y,w,h);p.annots.push(a);S.sel={page:i,id:a.id};openEditor(i,a,true);return;}
     const a={id:uid++,type:t,color:t==='highlight'?S.hl:S.color,width:S.width};setScreenRect(a,V.vp,x,y,w,h);p.annots.push(a);renderAnnots(i);});
 }
 function startInk(i,start){
@@ -521,7 +526,7 @@ function startInk(i,start){
 }
 function createText(i,pos,bg){
   const V=S.view[i],p=S.pages[i];pushHistory();
-  const a={id:uid++,type:'text',text:'',size:S.size,color:bg?'#1f2937':S.color,bg,rot:totRot(p),fixed:false};
+  const a={id:uid++,type:'text',text:'',size:S.size,color:bg?'#1f2937':S.color,bg,rot:totRot(p),fixed:false,font:S.font,bold:S.bold,italic:S.italic,underline:S.underline};
   setScreenRect(a,V.vp,pos.x,pos.y-(S.size*0.6)*S.zoom,140*S.zoom,(S.size*LH+2*PAD)*S.zoom);
   p.annots.push(a);S.sel={page:i,id:a.id};openEditor(i,a,true);
 }
@@ -529,6 +534,7 @@ function openEditor(i,a,isNew){
   commitEditor();S.editing={page:i,id:a.id,isNew:!!isNew};renderAnnots(i);
   const V=S.view[i],r=viewRect(a.rect,V.vp),z=S.zoom,ta=document.createElement('textarea');
   ta.className='editor';ta.value=a.text;ta.spellcheck=true;
+  ta.style.fontFamily=fontCss(a.font);ta.style.fontWeight=a.bold?'700':'400';ta.style.fontStyle=a.italic?'italic':'normal';ta.style.textDecoration=a.underline?'underline':'none';
   Object.assign(ta.style,{left:r.x+'px',top:r.y+'px',width:Math.max(r.w,60)+'px',height:r.h+'px',fontSize:(a.size*z)+'px',padding:(PAD*z)+'px',color:a.color,background:a.bg||'rgba(255,255,255,.75)'});
   const grow=()=>{if(a.fixed)return;ta.style.width='60px';ta.style.width=Math.max(r.w,ta.scrollWidth+4)+'px';ta.style.height='10px';ta.style.height=Math.max(r.h,ta.scrollHeight+2)+'px';};
   ta.addEventListener('input',grow);
@@ -592,11 +598,15 @@ function setTool(t){
   const tips={text:'Haz clic en la página donde quieras escribir',edit:'Arrastra sobre el texto que quieras corregir y escribe el nuevo',note:'Haz clic donde quieras poner la nota',highlight:'Arrastra sobre la zona que quieras resaltar',pen:'Dibuja con el ratón o con el dedo',box:'Arrastra para dibujar un recuadro',whiteout:'Arrastra sobre lo que quieras tapar'};
   if(tips[t])toast(tips[t]);
 }
-$$('.tool[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
+$('.tool[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
+$('.tool[data-t="text"]').addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','curo-reader-text');e.dataTransfer.effectAllowed='copy';});
 function applyProp(fn){if(!S.sel)return;const a=getAnnot(S.sel.page,S.sel.id);if(!a)return;pushHistory();fn(a);autoSize(a,S.sel.page);renderAnnots(S.sel.page);}
 $('#cColor').oninput=e=>{const v=e.target.value;if(S.sel){applyProp(a=>{if(a.type!=='whiteout'&&a.type!=='image')a.color=v;});return;}if(S.tool==='highlight')S.hl=v;else S.color=v;};
 $('#cWidth').onchange=e=>{const v=+e.target.value;S.width=v;applyProp(a=>{if(a.width)a.width=v;});};
 $('#cSize').onchange=e=>{const v=+e.target.value;S.size=v;applyProp(a=>{if(a.type==='text')a.size=v;});};
+$('#cFont').onchange=e=>{S.font=e.target.value;applyProp(a=>{if(a.type==='text')a.font=S.font;});};
+function toggleTextStyle(key,btn){S[key]=!S[key];$(btn).classList.toggle('on',S[key]);if(S.sel){const a=getAnnot(S.sel.page,S.sel.id);if(a&&a.type==='text')applyProp(x=>{x[key]=S[key];});}}
+$('#bBold').onclick=()=>toggleTextStyle('bold','#bBold');$('#bItalic').onclick=()=>toggleTextStyle('italic','#bItalic');$('#bUnderline').onclick=()=>toggleTextStyle('underline','#bUnderline');
 $('#bDel').onclick=deleteSel;
 
 /* ---------- páginas ---------- */
@@ -666,7 +676,9 @@ $$('.tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.p));
 
 /* ---------- guardar ---------- */
 async function buildPdf(){
-  const out=await PDFDocument.create();const font=await out.embedFont(StandardFonts.Helvetica);const imgs=new Map();const prepared={};
+  const out=await PDFDocument.create();const fontCache=new Map(),imgs=new Map(),prepared={};
+  function fontKey(a){const f=a.font||'Helvetica';if(f==='TimesRoman')return a.bold?(a.italic?'TimesRomanBoldItalic':'TimesRomanBold'):(a.italic?'TimesRomanItalic':'TimesRoman');if(f==='Courier')return a.bold?(a.italic?'CourierBoldOblique':'CourierBold'):(a.italic?'CourierOblique':'Courier');return a.bold?(a.italic?'HelveticaBoldOblique':'HelveticaBold'):(a.italic?'HelveticaOblique':'Helvetica');}
+  async function fontFor(a){const k=fontKey(a);if(!fontCache.has(k))fontCache.set(k,await out.embedFont(StandardFonts[k]));return fontCache.get(k);}
   for(const si of new Set(S.pages.map(p=>p.src))){
     const src=S.sources[si];const lib=await PDFDocument.load(src.bytes,{ignoreEncryption:true});
     try{const form=lib.getForm();if(form.getFields().length){
@@ -689,8 +701,11 @@ async function buildPdf(){
         const W=odd?h:w,H=odd?w:h,cx=x+w/2,cy=y+h/2,tl=[cx-d[0]*W/2-n[0]*H/2,cy-d[1]*W/2-n[1]*H/2];
         if(a.type==='text'){
           if(a.bg){cp.drawRectangle({x,y,width:w,height:h,color:hex(a.bg)});if(a.bg==='#fff59d')cp.drawRectangle({x,y,width:w,height:h,borderColor:hex('#e3c94a'),borderWidth:0.75});}
-          sanitize(a.text).split('\n').forEach((ln,k)=>{if(!ln)return;const off=PAD+a.size*ASC+k*a.size*LH;
-            cp.drawText(ln,{x:tl[0]+n[0]*off+d[0]*PAD,y:tl[1]+n[1]*off+d[1]*PAD,size:a.size,font,color:hex(a.color),rotate:degrees(r)});});
+          const textFont=await fontFor(a);
+          sanitize(a.text).split('\n').forEach((ln,k)=>{if(!ln)return;const off=PAD+a.size*ASC+k*a.size*LH,tx=tl[0]+n[0]*off+d[0]*PAD,ty=tl[1]+n[1]*off+d[1]*PAD;
+            cp.drawText(ln,{x:tx,y:ty,size:a.size,font:textFont,color:hex(a.color),rotate:degrees(r)});
+            if(a.underline){const tw=textFont.widthOfTextAtSize(ln,a.size);cp.drawLine({start:{x:tx,y:ty-a.size*.12},end:{x:tx+tw,y:ty-a.size*.12},thickness:Math.max(.5,a.size*.045),color:hex(a.color)});}
+          });
         }else{
           let im=imgs.get(a.src);if(!im){im=await out.embedPng(a.src);imgs.set(a.src,im);}
           cp.drawImage(im,{x:tl[0]+n[0]*H,y:tl[1]+n[1]*H,width:W,height:H,rotate:degrees(r)});
@@ -718,9 +733,17 @@ $('#bBlank').onclick=async()=>{busy(true,'Creando…');const np=await addPdf(awa
 $('#bSide').onclick=()=>$('#side').classList.toggle('hidden');
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;
 const drop=$('#drop');
-viewer.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+viewer.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();drop.classList.add('over');}else if(e.dataTransfer.types.includes('text/plain'))e.preventDefault();});
 viewer.addEventListener('dragleave',e=>{if(e.target===viewer||e.target===drop)drop.classList.remove('over');});
-viewer.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');const f=e.dataTransfer.files;if(f.length)openFiles(f,S.pages.length>0&&e.shiftKey);});
+viewer.addEventListener('drop',e=>{
+  e.preventDefault();drop.classList.remove('over');
+  if(e.dataTransfer.getData('text/plain')==='curo-reader-text'){
+    const pageEl=e.target.closest('.page');if(!pageEl)return;
+    const i=S.view.findIndex(v=>v&&v.el===pageEl);if(i<0)return;
+    S.cur=i;markCur();createText(i,localPos(e,S.view[i].svg),null);return;
+  }
+  const files=e.dataTransfer.files;if(files.length)openFiles(files,S.pages.length>0&&e.shiftKey);
+});
 
 /* ---------- teclado ---------- */
 document.addEventListener('keydown',e=>{
@@ -735,6 +758,12 @@ document.addEventListener('keydown',e=>{
   else if(k==='escape'){select(null);setTool('select');}
   else if(k==='pagedown'||k==='arrowright'&&!S.sel){$('#pNext').click();}
   else if(k==='pageup'||k==='arrowleft'&&!S.sel){$('#pPrev').click();}
+});
+viewer.addEventListener('contextmenu',e=>{
+  const hit=e.target.closest('[data-id]');if(!hit)return;
+  e.preventDefault();const pageEl=hit.closest('.page'),i=S.view.findIndex(v=>v&&v.el===pageEl);
+  if(i<0)return;select({page:i,id:+hit.dataset.id});
+  if(confirm('¿Eliminar esta anotación del PDF?'))deleteSel();
 });
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue='';}});
 if(window.innerWidth<900)$('#side').classList.add('hidden');
