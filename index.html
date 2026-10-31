@@ -229,7 +229,7 @@ const {PDFDocument,rgb,degrees,StandardFonts,BlendMode,LineCapStyle}=PDFLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PAD=3, LH=1.2, ASC=0.8;
-function fontCss(font){return font==='TimesRoman'?'Georgia, "Times New Roman", serif':font==='Courier'?'Courier, monospace':'Arial, Helvetica, sans-serif';}
+function fontCss(font){return font==='TimesRoman'?'Georgia, Times New Roman, serif':font==='Courier'?'Courier, monospace':'Arial, Helvetica, sans-serif';}
 const S={sources:[],pages:[],view:[],zoom:1.25,fit:false,tool:'select',sel:null,editing:null,
   color:'#111827',hl:'#fde047',width:2,size:12,font:'Helvetica',bold:false,italic:false,underline:false,undo:[],redo:[],name:'documento',cur:0,
   search:{q:'',hits:[],cur:-1},dirty:false};
