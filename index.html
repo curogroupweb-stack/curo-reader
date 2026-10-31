@@ -82,6 +82,7 @@ aside.hidden{display:none!important} aside[hidden]{display:none!important}
 .selbox{fill:none;stroke:#2563eb;stroke-width:1.5;stroke-dasharray:5 3;pointer-events:none}
 .handle{fill:#fff;stroke:#2563eb;stroke-width:1.5;cursor:nwse-resize}
 .tmp{fill:rgba(37,99,235,.08);stroke:#2563eb;stroke-dasharray:4 3}
+#annotMenu{position:fixed;z-index:1000;display:none;min-width:190px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:5px}#annotMenu.on{display:block}#annotMenu button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:9px 11px;border-radius:6px;cursor:pointer;color:var(--txt)}#annotMenu button:hover{background:#eef5f5}#annotMenu .danger{color:#b42318}
 .editor{position:absolute;border:1.5px dashed #2563eb;outline:none;resize:none;overflow:hidden;font-family:Helvetica,Arial,sans-serif;line-height:1.2;white-space:pre;z-index:5;min-width:60px}
 .pnum{position:absolute;bottom:-17px;right:0;font-size:11px;color:var(--muted)}
 #empty{position:absolute;inset:0;display:grid;place-items:center;padding:20px}
@@ -163,6 +164,7 @@ input[type=file]{display:none}
   <button class="tool" id="zIn" title="Acercar">+</button>
   <button class="tool" id="bRot" title="Girar la página actual"><span class="i">⟳</span><span class="lbl">Girar</span></button>
 </div>
+<div id="annotMenu" role="menu"><button type="button" data-action="edit">Editar texto</button><button type="button" data-action="select">Seleccionar y mover</button><button type="button" data-action="delete" class="danger">Borrar elemento</button></div>
 <div id="main">
   <aside id="side">
     <div class="tabs"><button class="on" data-p="thumbs">Páginas</button><button data-p="results">Búsqueda</button><button data-p="form">Formulario</button><button class="side-close" id="bCloseSide" type="button" aria-label="Cerrar panel lateral" title="Cerrar panel">×</button></div>
@@ -761,12 +763,21 @@ document.addEventListener('keydown',e=>{
   else if(k==='pagedown'||k==='arrowright'&&!S.sel){$('#pNext').click();}
   else if(k==='pageup'||k==='arrowleft'&&!S.sel){$('#pPrev').click();}
 });
+let contextTarget=null;
+function hideAnnotMenu(){$('#annotMenu').classList.remove('on');contextTarget=null;}
 viewer.addEventListener('contextmenu',e=>{
   const hit=e.target.closest('[data-id]');if(!hit)return;
   e.preventDefault();const pageEl=hit.closest('.page'),i=S.view.findIndex(v=>v&&v.el===pageEl);
-  if(i<0)return;select({page:i,id:+hit.dataset.id});
-  if(confirm('¿Eliminar esta anotación del PDF?'))deleteSel();
+  if(i<0)return;const id=+hit.dataset.id;select({page:i,id});contextTarget={page:i,id};
+  const menu=$('#annotMenu');menu.classList.add('on');menu.style.left=Math.min(e.clientX,window.innerWidth-205)+'px';menu.style.top=Math.min(e.clientY,window.innerHeight-125)+'px';
 });
+$('#annotMenu').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b||!contextTarget)return;const target={...contextTarget};hideAnnotMenu();select(target);
+  if(b.dataset.action==='edit'){const a=getAnnot(target.page,target.id);if(a&&a.type==='text')openEditor(target.page,a);else toast('Este elemento no contiene texto editable');}
+  else if(b.dataset.action==='select'){setTool('select');toast('Arrastra el elemento para moverlo; usa el tirador azul para cambiar su tamaño');}
+  else if(b.dataset.action==='delete')deleteSel();
+});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#annotMenu'))hideAnnotMenu();});
+window.addEventListener('resize',hideAnnotMenu);
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue='';}});
 if(window.innerWidth<900)$('#side').classList.add('hidden');
 updateBtns();
