@@ -599,7 +599,7 @@ function setTool(t){
   const tips={text:'Haz clic en la página donde quieras escribir',edit:'Arrastra sobre el texto que quieras corregir y escribe el nuevo',note:'Haz clic donde quieras poner la nota',highlight:'Arrastra sobre la zona que quieras resaltar',pen:'Dibuja con el ratón o con el dedo',box:'Arrastra para dibujar un recuadro',whiteout:'Arrastra sobre lo que quieras tapar'};
   if(tips[t])toast(tips[t]);
 }
-$('.tool[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
+document.querySelectorAll('.tool[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
 $('.tool[data-t="text"]').addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','curo-reader-text');e.dataTransfer.effectAllowed='copy';});
 function applyProp(fn){if(!S.sel)return;const a=getAnnot(S.sel.page,S.sel.id);if(!a)return;pushHistory();fn(a);autoSize(a,S.sel.page);renderAnnots(S.sel.page);}
 $('#cColor').oninput=e=>{const v=e.target.value;if(S.sel){applyProp(a=>{if(a.type!=='whiteout'&&a.type!=='image')a.color=v;});return;}if(S.tool==='highlight')S.hl=v;else S.color=v;};
