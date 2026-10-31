@@ -672,7 +672,7 @@ function buildForm(){
   if(any){const n=document.createElement('div');n.className='hint';n.style.marginTop='8px';n.textContent='Los datos se escriben en el PDF al pulsar «Guardar PDF».';box.appendChild(n);}
   else box.textContent=S.pages.length?'Este documento no tiene campos de formulario. Puedes usar la herramienta «Texto» para escribir encima.':'Abre un PDF con formulario para rellenarlo aquí.';
 }
-function showPanel(n){document.querySelectorAll('.tabs button[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===n));$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));const side=$('#side');side.hidden=false;side.classList.remove('hidden');}
+function showPanel(n){document.querySelectorAll('.tabs button[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===n));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));const side=$('#side');side.hidden=false;side.classList.remove('hidden');}
 document.querySelectorAll('.tabs button[data-p]').forEach(b=>b.addEventListener('click',()=>showPanel(b.dataset.p)));
 
 /* ---------- guardar ---------- */
