@@ -672,8 +672,8 @@ function buildForm(){
   if(any){const n=document.createElement('div');n.className='hint';n.style.marginTop='8px';n.textContent='Los datos se escriben en el PDF al pulsar «Guardar PDF».';box.appendChild(n);}
   else box.textContent=S.pages.length?'Este documento no tiene campos de formulario. Puedes usar la herramienta «Texto» para escribir encima.':'Abre un PDF con formulario para rellenarlo aquí.';
 }
-function showPanel(n){$$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===n));$$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));$('#side').classList.remove('hidden');}
-$$('.tabs button').forEach(b=>b.onclick=()=>showPanel(b.dataset.p));
+function showPanel(n){$('.tabs button[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===n));$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));const side=$('#side');side.hidden=false;side.classList.remove('hidden');}
+$('.tabs button[data-p]').forEach(b=>b.addEventListener('click',()=>showPanel(b.dataset.p)));
 
 /* ---------- guardar ---------- */
 async function buildPdf(){
@@ -731,8 +731,8 @@ $('#bAdd').onclick=()=>$('#fAdd').click();
 $('#fOpen').onchange=e=>{const f=e.target.files;if(f.length)openFiles(f,false);e.target.value='';};
 $('#fAdd').onchange=e=>{const f=e.target.files;if(f.length)openFiles(f,true);e.target.value='';};
 $('#bBlank').onclick=async()=>{busy(true,'Creando…');const np=await addPdf(await blankPdfBytes(),'en blanco');S.pages=np;S.name='documento-nuevo';S.undo=[];S.redo=[];rebuild();buildForm();busy(false);};
-$('#bSide').onclick=()=>$('#side').classList.toggle('hidden');
-$('#bCloseSide').onclick=()=>$('#side').classList.add('hidden');
+$('#bSide').addEventListener('click',()=>{const side=$('#side');const close=side.hidden||side.classList.contains('hidden');side.hidden=!close;side.classList.toggle('hidden',!close);});
+$('#bCloseSide').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const side=$('#side');side.hidden=true;side.classList.add('hidden');});
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;
 const drop=$('#drop');
 viewer.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();drop.classList.add('over');}else if(e.dataTransfer.types.includes('text/plain'))e.preventDefault();});
