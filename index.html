@@ -501,10 +501,11 @@ function startMove(i,id,start){
     if(orig.points)a.points=orig.points.map(([x,y])=>[x+dx,y+dy]);renderAnnots(i);});
 }
 function startResize(i,id){
-  const V=S.view[i],a=getAnnot(i,id),r0=viewRect(a.rect,V.vp),ratio=r0.w/Math.max(1,r0.h);let pushed=false;
+  const V=S.view[i],a=getAnnot(i,id),r0=viewRect(a.rect,V.vp),ratio=r0.w/Math.max(1,r0.h),size0=a.size||S.size;let pushed=false;
   drag(e=>{const q=localPos(e,V.svg);if(!pushed){pushHistory();pushed=true;}
     let w=Math.max(10,q.x-r0.x),h=Math.max(8,q.y-r0.y);if(a.type==='image')h=w/ratio;
-    if(a.type==='text')a.fixed=true;setScreenRect(a,V.vp,r0.x,r0.y,w,h);renderAnnots(i);});
+    if(a.type==='text'){a.fixed=true;a.size=Math.max(5,Math.min(96,size0*(w/Math.max(1,r0.w))));}
+    setScreenRect(a,V.vp,r0.x,r0.y,w,h);renderAnnots(i);});
 }
 function tmpRect(svg){const r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('class','tmp');svg.appendChild(r);return r;}
 function startRect(i,start,t){
@@ -541,7 +542,7 @@ function openEditor(i,a,isNew){
   Object.assign(ta.style,{left:r.x+'px',top:r.y+'px',width:Math.max(r.w,60)+'px',height:r.h+'px',fontSize:(a.size*z)+'px',padding:(PAD*z)+'px',color:a.color,background:a.bg||'rgba(255,255,255,.75)'});
   const grow=()=>{if(a.fixed)return;ta.style.width='60px';ta.style.width=Math.max(r.w,ta.scrollWidth+4)+'px';ta.style.height='10px';ta.style.height=Math.max(r.h,ta.scrollHeight+2)+'px';};
   ta.addEventListener('input',grow);
-  ta.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();commitEditor();}});
+  ta.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();commitEditor();}else if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();commitEditor();}});
   ta.addEventListener('blur',()=>setTimeout(()=>{if(S.editing&&S.editing.id===a.id)commitEditor();},0));
   ta.addEventListener('pointerdown',e=>e.stopPropagation());
   V.el.appendChild(ta);S.editing.ta=ta;grow();ta.focus({preventScroll:true});setTimeout(()=>{if(document.activeElement!==ta&&S.editing&&S.editing.ta===ta)ta.focus({preventScroll:true});},0);
