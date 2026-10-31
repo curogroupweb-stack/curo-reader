@@ -458,7 +458,7 @@ function renderAnnots(i){
 function select(sel){const old=S.sel;S.sel=sel;if(old)renderAnnots(old.page);if(sel&&(!old||old.page!==sel.page))renderAnnots(sel.page);updateBtns();
   if(sel){const a=getAnnot(sel.page,sel.id);if(a){if(a.color)$('#cColor').value=a.color;if(a.width)$('#cWidth').value=String(a.width);if(a.size)$('#cSize').value=String(a.size);
     if(a.type==='text'){S.font=a.font||'Helvetica';S.bold=!!a.bold;S.italic=!!a.italic;S.underline=!!a.underline;$('#cFont').value=S.font;$('#bBold').classList.toggle('on',S.bold);$('#bItalic').classList.toggle('on',S.italic);$('#bUnderline').classList.toggle('on',S.underline);}
-  }}}}
+  }}}
 function autoSize(a,i){
   if(a.type!=='text'||a.fixed)return;const V=S.view[i];if(!V)return;
   const lines=a.text.split('\n');const W=Math.max(30,...lines.map(l=>textWidth(l,a.size)))+2*PAD+2;const H=lines.length*a.size*LH+2*PAD;
